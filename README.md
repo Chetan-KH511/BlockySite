@@ -9,7 +9,7 @@ A simple NSFW filter extension for chrome, built as a part of Mini project, Hope
 
 It uses NSFW JS to check NSFW images when they are loaded. 
 
-If the loaded images contain NSFW content as predicted by the algorithm, it is replaced by a replacement image provided.
+If the loaded images contain NSFW content as predicted by the algorithm, they are replaced by a replacement image provided.
 
 Model used- [**nsfwjs**](https://github.com/infinitered/nsfwjs) devoleped by [**Infinite Red, Inc.**](https://github.com/infinitered)
 
@@ -17,6 +17,8 @@ Original better version that contains multiple models and many more features....
 [**Download NSFW Filter**](https://github.com/navendu-pottekkat/nsfw-filter/archive/master.zip)
 
 Supported browsers: [**Google Chrome**](#adding-to-chrome), [**Mozilla Firefox**](#adding-to-firefox).
+
+Comments on the code is entirely done by Claude and Chatgpt for better understanding
 
 
 # Installation 

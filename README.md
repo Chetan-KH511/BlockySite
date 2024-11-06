@@ -14,7 +14,7 @@ If the loaded images contain NSFW content as predicted by the algorithm, they ar
 Model used- [**nsfwjs**](https://github.com/infinitered/nsfwjs) devoleped by [**Infinite Red, Inc.**](https://github.com/infinitered)
 
 Original better version that contains multiple models and many more features.....
-[**Download NSFW Filter**](https://github.com/navendu-pottekkat/nsfw-filter/archive/master.zip)
+[**Download Officical NSFW Filter**](https://github.com/nsfw-filter/nsfw-filter)
 
 Supported browsers: [**Google Chrome**](#adding-to-chrome), [**Mozilla Firefox**](#adding-to-firefox).
 

@@ -3,7 +3,7 @@
 # NSFW Filter
 
 <img src="./dist/images/icon.png" align="right"
-     alt="Download now" width="120" height="178">
+     alt="Download now" width="178" height="178">
 
 A simple NSFW filter extension for chrome, built as a part of Mini project, Hope you like it...!!
 

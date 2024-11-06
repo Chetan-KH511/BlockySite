@@ -1,6 +1,6 @@
 
 
-# NSFW Filter
+# BlockySite
 
 <img src="./dist/images/icon.png" align="right"
      alt="Download now" width="178" height="178">

@@ -1,23 +1,23 @@
 {
-  "name": "nsfw-miniproject",
+  "name": "blockysite",
   "version": "1.0.0",
-  "description": "",
-  "main": "background.js",
+  "description": "A simple NSFW filter extension for chrome, built as a part of school project, Hope you like it...!!",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack --config webpack.config.js"
+    "copy": "copy src\\content.js dist\\src\\",
+    "build": "parcel build src/background.js -d dist/src/ -o background && npm run copy",
+    "watch": "npm run copy && parcel watch src/background.js --hmr-hostname localhost -d dist/src/ -o background"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": {
+    "name": "Chetan KH511",
+    "email": "chetanbhatmb@gmail.com",
+    "Special Thanks" : "claude-3-5-sonnet-20240620"
+  },
+  "homepage": "https://github.com/Chetan-KH511/nsfw-miniproject",
   "dependencies": {
-    "@tensorflow/tfjs": "^4.22.0",
-    "@tensorflow/tfjs-backend-wasm": "^4.22.0",
-    "nsfwjs": "^4.2.0"
+    "@tensorflow/tfjs": "^3.18.0",
+    "nsfwjs": "^2.2.0"
   },
   "devDependencies": {
-    "copy-webpack-plugin": "^12.0.2",
-    "webpack": "^5.96.1",
-    "webpack-cli": "^5.1.4"
+    "parcel-bundler": "^1.12.4"
   }
 }

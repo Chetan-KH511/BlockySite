@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunknsfw_miniproject=self.webpackChunknsfw_miniproject||[]).push([[861],{861:(n,e,t)=>{t.r(e),t.d(e,{modelJson:()=>i,weightBundles:()=>r});var i=function(){return t.e(601).then(t.bind(t,8601))},r=[function(){return t.e(436).then(t.bind(t,2436))}]}}]);

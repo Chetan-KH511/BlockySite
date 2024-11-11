@@ -1,68 +1,118 @@
+const DEBUG = 1;
+if (!DEBUG) console.log = () => { };
 
 
-import * as tf from '@tensorflow/tfjs'
-import * as nsfwjs from 'nsfwjs'
+// The script is executed when a user scrolls through a website on the tab that is active in the browser.
+let isScrolling;
+let images = [...document.getElementsByTagName('img')];
 
-// Enable production mode in TensorFlow
+const replacementImages = [
+  'replacements/safe-image.jpg',
+  'replacements/safe-image2.jpg',
+  'replacements/safe-image3.jpg'
+];
 
-tf.enableProdMode()
+const GORE_KEYWORDS = [
+  'gore', 'violent', 'blood', 'brutal', 'grotesque', 'splatter', 
+  'guts', 'massacre', 'slaughter', 'carnage', 'dismember',
+  'mutilation', 'torture', 'cannibal', 'decapitation', 'entrails',
+  'viscera', 'disembowel', 'eviscerate', 'wound', 'injury',
+  'bloody', 'horror', 'death', 'corpse', 'cadaver', 'morgue'
+];
 
-const IMAGE_SIZE = 224; // nsfwjs model used here takes input tensors as 224x224
-const FILTER_THRESHOLD = 0.75; // you can set a threshold and use the filter only if the predictions are above the threshold
-const FILTER_LIST = ["Hentai", "Porn", "Sexy"]; // the image classes that needs to be filtered
-const MODEL_PATH = '../models/'; // the model is stored as a web accessible resource
+function checkForGoreContext() {
+  // Check URL
+  const urlHasGore = GORE_KEYWORDS.some(keyword => 
+    window.location.href.toLowerCase().includes(keyword)
+  );
 
-nsfwjs.load(MODEL_PATH).then(model => {
-  /*
-  This function loads the nsfwjs model to memory and prepares it for making predictions.
-  Once the model is loaded, it will load the images and make predictions.
-  */
-  async function loadImage(url) {
-    /*
-    This function loads the image for passing to the model.
-    */
-    const image = new Image(IMAGE_SIZE, IMAGE_SIZE);
-    return new Promise((resolve, reject) => {
-      image.crossOrigin = "anonymous";
-      image.onload = () => resolve(image);
-      image.onerror = (err) => reject(err);
-      image.src = url;
-    });
-  }
-
-  async function executeModel(url) {
-    /*
-    Executes the model and returns predicitions.
-    */
-    const image = await loadImage(url);
-    const prediction = model.classify(image, 1); // Change the second parameter to change the number of top predicitions returned
-    const output = prediction;
-    return output;
-  }
-
-  chrome.runtime.onMessage.addListener((request, sender, callback) => {
-    executeModel(request.url)
-      .then(op => {
-        if (FILTER_LIST.includes(op[0].className)) {
-          /*
-          If the top predicition is in our filter list, filter the image (return true)
-          */
-          console.log(op[0].className, op[0].probability)
-          return true;
-        }
-        else {
-          return false;
-        }
-      })
-      .then(result => callback({ result: result }))
-      .catch(err => callback({ result: false, err: err.message }));
-    return true; // needed to make the content script wait for the async processing to complete
+  // Check page text near images
+  const hasGoreContext = GORE_KEYWORDS.some(keyword => {
+    const elements = document.querySelectorAll('a, p, h1, h2, h3, h4, h5, span');
+    return Array.from(elements).some(el => 
+      el.textContent.toLowerCase().includes(keyword)
+    );
   });
 
-  // Add this after the model loading
-  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status === 'complete' && tab.active) {
-      chrome.tabs.sendMessage(tabId, { action: "classify" });
+  return urlHasGore || hasGoreContext;
+}
+
+function clasifyImages() {
+  /*
+  Classifies images and calls all the helper functions.
+  */
+  [...images, ...document.getElementsByTagName('img')].unique().filter(validImage).forEach(analyzeImage);
+}
+
+function validImage(image) {
+  /*
+  Checks if the image is of a certain height and width and check if the image has already been replaced,
+  preventing infinite loops.
+  */
+  const valid = image.src &&
+    image.width > 64 && image.height > 64 &&
+    !image.dataset.isReplaced;
+  console.log('image %s valid', image.src, valid);
+  return valid;
+}
+
+function analyzeImage(image) {
+  console.log('analyze image %s', image.src);
+  
+  // Check for gore context first
+  if (checkForGoreContext()) {
+    // If gore context found, still analyze the image before blocking
+    chrome.runtime.sendMessage({ 
+      url: image.src, 
+      hasGoreContext: true  // Pass this flag to background.js
+    }, response => {
+      if (response && response.result === true) {
+        const randomIndex = Math.floor(Math.random() * replacementImages.length);
+        const replacementImage = chrome.runtime.getURL(replacementImages[randomIndex]);
+        image.src = replacementImage;
+        image.srcset = "";
+        image.dataset.filtered = true;
+        image.dataset.isReplaced = true;
+      }
+    });
+    return;
+  }
+
+  // Normal flow for non-gore-context images
+  chrome.runtime.sendMessage({ url: image.src }, response => {
+    console.log('prediction for image %s', image.src, response);
+    console.log(image);
+    if (response && response.result === true) {
+      const randomIndex = Math.floor(Math.random() * replacementImages.length);
+      const replacementImage = chrome.runtime.getURL(replacementImages[randomIndex]);
+      image.src = replacementImage;
+      image.srcset = "";
+      image.dataset.filtered = true;
+      image.dataset.isReplaced = true;
     }
   });
+}
+
+document.addEventListener("scroll", (images) => {
+  /*
+  Call function when scrolling and timeout after scrolling stops.
+  */
+  clearTimeout(isScrolling);
+  isScrolling = setTimeout(() => { clasifyImages() }, 100);
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  clasifyImages();
+});
+
+Array.prototype.unique = function () {
+  return this.filter(function (value, index, self) {
+    return self.indexOf(value) === index;
+  });
+}
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "classify") {
+    clasifyImages();
+  }
 });

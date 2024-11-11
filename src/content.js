@@ -5,10 +5,21 @@ import * as nsfwjs from 'nsfwjs'
 
 tf.enableProdMode()
 
+const IMAGE_SIZE = 224; // nsfwjs model used here takes input tensors as 224x224
+const FILTER_THRESHOLD = 0.75; // you can set a threshold and use the filter only if the predictions are above the threshold
+const FILTER_LIST = ["Hentai", "Porn", "Sexy"]; // the image classes that needs to be filtered
+const RED_THRESHOLD = 0.4; // Threshold for red detection (40% of the image)
+const MODEL_PATH = '../models/'; // the model is stored as a web accessible resource
+
 nsfwjs.load(MODEL_PATH).then(model => {
-  
+  /*
+  This function loads the nsfwjs model to memory and prepares it for making predictions.
+  Once the model is loaded, it will load the images and make predictions.
+  */
   async function loadImage(url) {
-    
+    /*
+    This function loads the image for passing to the model.
+    */
     const image = new Image(IMAGE_SIZE, IMAGE_SIZE);
     return new Promise((resolve, reject) => {
       image.crossOrigin = "anonymous";
@@ -36,19 +47,21 @@ nsfwjs.load(MODEL_PATH).then(model => {
       const green = imageData[i + 1];
       const blue = imageData[i + 2];
       
-
+      // Check for bright red (fresh blood)
       if (red > 150 && red > green * 2 && red > blue * 2) {
         redPixels++;
       }
       
-     if (red > 80 && red < 150 && 
+      // Check for dark red (dried blood/gore)
+      if (red > 80 && red < 150 && 
           red > green * 1.8 && 
           red > blue * 1.8 && 
           green < 80 && blue < 80) {
         darkRedPixels++;
       }
 
-     if (red > 180 && green > 120 && green < 170 && blue > 100 && blue < 140) {
+      // Check for flesh tones near red areas
+      if (red > 180 && green > 120 && green < 170 && blue > 100 && blue < 140) {
         fleshTonePixels++;
       }
     }
@@ -57,7 +70,11 @@ nsfwjs.load(MODEL_PATH).then(model => {
     const darkRedRatio = darkRedPixels / totalPixels;
     const fleshRatio = fleshTonePixels / totalPixels;
     
-    r
+    // Detect gore based on combination of colors and patterns
+    return (redRatio > 0.1) || // Lower threshold for bright red
+           (darkRedRatio > 0.15) || // Lower threshold for dark red
+           (redRatio > 0.05 && fleshRatio > 0.2); // Combination of blood and flesh tones
+  }
 
   async function executeModel(url, hasGoreContext = false) {
     const image = await loadImage(url);
@@ -68,6 +85,7 @@ nsfwjs.load(MODEL_PATH).then(model => {
       return { shouldBlock: true, reason: 'nsfw' };
     }
     
+    // For gore context, use more sensitive thresholds in detectGore
     if (hasGoreContext) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -86,7 +104,7 @@ nsfwjs.load(MODEL_PATH).then(model => {
         const green = imageData[i + 1];
         const blue = imageData[i + 2];
         
-
+        // More sensitive thresholds for gore context
         if (red > 140 && red > green * 1.8 && red > blue * 1.8) {
           redPixels++;
         }
@@ -109,7 +127,7 @@ nsfwjs.load(MODEL_PATH).then(model => {
       };
     }
     
-
+    // Normal gore detection for non-gore-context
     if (detectGore(image)) {
       return { shouldBlock: true, reason: 'gore' };
     }
@@ -124,7 +142,7 @@ nsfwjs.load(MODEL_PATH).then(model => {
     return true;
   });
 
-
+  
   chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === 'complete' && tab.active) {
       chrome.tabs.sendMessage(tabId, { action: "classify" });
